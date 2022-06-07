@@ -1,0 +1,2 @@
+rootProject.name = "MSPlayer"
+include ':app'
