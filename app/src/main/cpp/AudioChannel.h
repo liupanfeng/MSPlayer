@@ -20,7 +20,7 @@ extern "C"{
 };
 
 /**
- * 音频轨道
+ * 音频通道
  */
 class AudioChannel : public BaseChannel{
 

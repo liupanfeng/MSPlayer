@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ASMIdeaPluginConfiguration">
-    <asm skipDebug="false" skipFrames="false" skipCode="false" expandFrames="false" />
+    <asm skipDebug="false" skipFrames="false" skipCode="false" expandFrames="true" />
     <groovy codeStyle="LEGACY" />
   </component>
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/workspace/MSPlayer/app/src/main/res/drawable/custom_play_seekbar_ball.xml" value="0.1" />
+        <entry key="..\:/workspace/MSPlayer/app/src/main/res/drawable/play_seek_bar.xml" value="0.1" />
         <entry key="..\:/workspace/MSPlayer/app/src/main/res/layout/activity_main.xml" value="0.1" />
       </map>
     </option>
