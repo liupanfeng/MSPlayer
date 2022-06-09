@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <string>
-#include "MSPlayer.h"
+#include "ms_video_player.h"
 #include "jni_callback.h"
 #include <android/native_window_jni.h>
 #include "android_log_util.h"

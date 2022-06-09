@@ -2,7 +2,7 @@
 // Created by lpf on 2022/6/1.
 //
 
-#include "MSPlayer.h"
+#include "ms_video_player.h"
 #include "ms_video_statel.h"
 
 /**

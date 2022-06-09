@@ -1,8 +1,8 @@
 //
 //
 
-#ifndef MSPLAYER_MSPLAYER_H
-#define MSPLAYER_MSPLAYER_H
+#ifndef MSPLAYER_MS_VIDEO_PLAYER_H
+#define MSPLAYER_MS_VIDEO_PLAYER_H
 
 #include <cstring>
 #include <pthread.h>
@@ -97,4 +97,4 @@ public:
 };
 
 
-#endif //MSPLAYER_MSPLAYER_H
+#endif //MSPLAYER_MS_VIDEO_PLAYER_H
