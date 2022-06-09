@@ -3,12 +3,12 @@
 //
 //
 
-#ifndef MSPLAYER_AUDIOCHANNEL_H
-#define MSPLAYER_AUDIOCHANNEL_H
+#ifndef MSPLAYER_MS_AUDIO_CHANNEL_H
+#define MSPLAYER_MS_AUDIO_CHANNEL_H
 
 
-#include "BaseChannel.h"
-#include "JNICallbackHelper.h"
+#include "ms_base_channel.h"
+#include "jni_callback.h"
 
 //播放音频原始数据 PCM
 #include <SLES/OpenSLES.h>
@@ -50,8 +50,8 @@ public:
 
     // 播放器队列接口
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue = 0;
-
-    double audio_time; // TODO 音视频同步 1.1
+    /*音视频同步*/
+    double audio_time;
 
 public:
     AudioChannel(int streamIndex, AVCodecContext *codecContext, AVRational rational);
@@ -67,4 +67,4 @@ public:
 };
 
 
-#endif //MSPLAYER_AUDIOCHANNEL_H
+#endif //MSPLAYER_MS_AUDIO_CHANNEL_H

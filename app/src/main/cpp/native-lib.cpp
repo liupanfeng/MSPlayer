@@ -1,9 +1,9 @@
 #include <jni.h>
 #include <string>
 #include "MSPlayer.h"
-#include "JNICallbackHelper.h"
+#include "jni_callback.h"
 #include <android/native_window_jni.h>
-#include "log_util.h"
+#include "android_log_util.h"
 
 extern "C"{
 #include <libavutil/avutil.h>
@@ -45,7 +45,7 @@ void renderFrame(uint8_t * src_data, int width, int height, int src_lineSize) {
         return;
     }
 
-    // TODO 开始真正渲染，因为window没有被锁住了，就可以把 rgba数据 ---> 字节对齐 渲染
+    //开始真正渲染，因为window没有被锁住了，就可以把 rgba数据 ---> 字节对齐 渲染
     // 填充window_buffer  画面就出来了  === [目标]
     uint8_t *dst_data = static_cast<uint8_t *>(window_buffer.bits);
     int dst_linesize = window_buffer.stride * 4;
@@ -90,7 +90,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_meishe_msplayer_MSPlayer_prepareNative(JNIEnv *env, jobject thiz, jstring data_source) {
     const char * data_source_ = env->GetStringUTFChars(data_source, 0);
-    auto *helper = new JNICallbakcHelper(vm, env, thiz); // C++子线程回调 ， C++主线程回调
+    auto *helper = new JniUtil(vm, env, thiz); // C++子线程回调 ， C++主线程回调
     msPlayer = new MSPlayer(data_source_, helper);
     msPlayer->setRenderCallback(renderFrame);
     msPlayer->prepare();

@@ -1,6 +1,6 @@
 
-#ifndef MSPLAYER_SAFE_QUEUE_H
-#define MSPLAYER_SAFE_QUEUE_H
+#ifndef MSPLAYER_MS_SAFE_QUEUE_H
+#define MSPLAYER_MS_SAFE_QUEUE_H
 
 
 #include <queue>
@@ -152,4 +152,4 @@ public:
 };
 
 
-#endif //MSPLAYER_SAFE_QUEUE_H
+#endif //MSPLAYER_MS_SAFE_QUEUE_H

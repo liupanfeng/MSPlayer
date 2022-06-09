@@ -1,6 +1,6 @@
 //
 //
-#include "VideoChannel.h"
+#include "ms_video_channel.h"
 
 #define STATE_WORK 1
 #define STATE_STOP 0
@@ -72,8 +72,8 @@ void *task_video_play(void *args) {
 }
 
 /**
- * 1.把队列里面的压缩包(AVPacket *)取出来，然后解码成（AVFrame * ）原始包 ----> 保存队列
- * 2.把队列里面的原始包(AVFrame *)取出来， 播放
+ *  把队列里面的压缩包(AVPacket *)取出来，然后解码成（AVFrame * ）原始包 ----> 保存队列
+ *  把队列里面的原始包(AVFrame *)取出来， 播放
  */
 void VideoChannel::start() {
     isPlaying = true;
@@ -95,7 +95,7 @@ void VideoChannel::start() {
 void VideoChannel::video_decode() {
     AVPacket *pkt = 0;
     while (isPlaying) {
-        if (isPlaying&&frames.size()>MAX_SIZE){
+        if (isPlaying&& frames.size() > AV_MAX_SIZE){
             av_usleep(10*000);
             continue;
         }

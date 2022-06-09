@@ -12,9 +12,9 @@ extern "C" {
 #include <libavutil/time.h>
 };
 
-#include "safe_queue.h"
-#include "log_util.h"
-#include "JNICallbackHelper.h"
+#include "ms_safe_queue.h"
+#include "android_log_util.h"
+#include "jni_callback.h"
 
 class BaseChannel {
 public:
@@ -24,11 +24,12 @@ public:
     bool isPlaying; // 音频 和 视频 都会有的标记 是否播放
     AVCodecContext *codecContext = 0; // 音频 视频 都需要的 解码器上下文
 
-    AVRational time_base; // TODO 音视频同步 2.1 （AudioChannel VideoChannel 都需要时间基）单位而已
+    /*音视频同步  （AudioChannel VideoChannel 都需要时间基）单位而已*/
+    AVRational time_base;
 
 
-    JNICallbakcHelper *jniCallbakcHelper = 0;
-    void setJNICallbakcHelper(JNICallbakcHelper *jniCallbakcHelper) {
+    JniUtil *jniCallbakcHelper = 0;
+    void setJNICallbakcHelper(JniUtil *jniCallbakcHelper) {
         this->jniCallbakcHelper = jniCallbakcHelper;
     }
 
@@ -42,7 +43,7 @@ public:
         frames.setReleaseCallback(releaseAVFrame); // 给队列设置Callback，Callback释放队列里面的数据
     }
 
-//父类析构一定要加virtual
+   /*父类析构一定要加virtual*/
     virtual ~BaseChannel() {
         packets.clear();
         frames.clear();

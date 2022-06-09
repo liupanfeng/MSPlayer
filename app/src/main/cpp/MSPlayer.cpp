@@ -3,14 +3,14 @@
 //
 
 #include "MSPlayer.h"
-#include "video_statel.h"
+#include "ms_video_statel.h"
 
 /**
  * 构造方法
  * @param data_source  资源路径 ，callback
  * @param callbackHelper
  */
-MSPlayer::MSPlayer(const char *data_source, JNICallbakcHelper *helper) {
+MSPlayer::MSPlayer(const char *data_source, JniUtil *helper) {
     // this->data_source = data_source;
     // 如果被释放，会造成悬空指针
 
@@ -88,7 +88,7 @@ void MSPlayer::prepare_() {
     if (r) {
         if (helper) {
             //视频地址或者url异常
-            helper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
+            helper->onError(MS_THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
         }
         avformat_close_input(&avFormatContext);
         return;
@@ -101,7 +101,7 @@ void MSPlayer::prepare_() {
     r = avformat_find_stream_info(avFormatContext, nullptr);
     if (r < 0) {
         if (helper) {  //未发现音视频流
-            helper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
+            helper->onError(MS_THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
         }
         avformat_close_input(&avFormatContext);
         return;
@@ -132,7 +132,7 @@ void MSPlayer::prepare_() {
         AVCodec *codec = avcodec_find_decoder(parameters->codec_id);
         if (!codec) {
             if (helper) {
-                helper->onError(THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
+                helper->onError(MS_THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
             }
             avformat_close_input(&avFormatContext);
             return;
@@ -142,7 +142,7 @@ void MSPlayer::prepare_() {
         codecContext = avcodec_alloc_context3(codec);
         if (!codecContext) {
             if (helper) { //没找到 解码器
-                helper->onError(THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
+                helper->onError(MS_THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
             }
             /*释放此上下文 codecContext就行，不用担心codec，内部会自动释放 */
             avcodec_free_context(&codecContext);
@@ -158,7 +158,7 @@ void MSPlayer::prepare_() {
         if (r < 0) {
             if (helper) {
                 /*无法根据解码器创建上下文*/
-                helper->onError(THREAD_CHILD, FFMPEG_ALLOC_CODEC_CONTEXT_FAIL);
+                helper->onError(MS_THREAD_CHILD, FFMPEG_ALLOC_CODEC_CONTEXT_FAIL);
             }
             /*释放此上下文 codecContext就行，不用担心codec，内部会自动释放 */
             avcodec_free_context(&codecContext);
@@ -172,7 +172,7 @@ void MSPlayer::prepare_() {
         if (r) {
             if (helper) {
                 /*打开解码器失败*/
-                helper->onError(THREAD_CHILD, FFMPEG_OPEN_DECODER_FAIL);
+                helper->onError(MS_THREAD_CHILD, FFMPEG_OPEN_DECODER_FAIL);
             }
             avcodec_free_context(&codecContext);
             avformat_close_input(&avFormatContext);
@@ -211,7 +211,7 @@ void MSPlayer::prepare_() {
     /*如果流中没有音频 也没有视频 【健壮性校验】*/
     if (!audio_channel && !video_channel) {
         if (helper) {
-            helper->onError(THREAD_CHILD, FFMPEG_NOMEDIA);
+            helper->onError(MS_THREAD_CHILD, FFMPEG_NOMEDIA);
         }
         if (codecContext) {
             /*
@@ -225,7 +225,7 @@ void MSPlayer::prepare_() {
 
     /*准备好准备工作，通知给上层*/
     if (helper) {
-        helper->onPrepared(THREAD_CHILD);
+        helper->onPrepared(MS_THREAD_CHILD);
     }
 }
 
@@ -288,16 +288,19 @@ void MSPlayer::start() {
 
 }
 
+/**
+ * 子线程执行具体的代码逻辑
+ */
 void MSPlayer::start_() {
     while (isPlaying) {
         // AVPacket 可能是音频 也可能是视频（压缩包）
         AVPacket *packet = av_packet_alloc();
-        if (video_channel && video_channel->packets.size() > MAX_SIZE) {
+        if (video_channel && video_channel->packets.size() > AV_MAX_SIZE) {
             av_usleep(10 * 1000);
             continue;
         }
 
-        if (audio_channel && audio_channel->packets.size() > MAX_SIZE) {
+        if (audio_channel && audio_channel->packets.size() > AV_MAX_SIZE) {
             av_usleep(10 * 1000);
             continue;
         }

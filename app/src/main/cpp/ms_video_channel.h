@@ -1,12 +1,12 @@
 
-#ifndef MSPLAYER_VIDEOCHANNEL_H
-#define MSPLAYER_VIDEOCHANNEL_H
+#ifndef MSPLAYER_MS_VIDEO_CHANNEL_H
+#define MSPLAYER_MS_VIDEO_CHANNEL_H
 
 
-#include "BaseChannel.h"
+#include "ms_base_channel.h"
 
-#include "log_util.h"
-#include "AudioChannel.h"
+#include "android_log_util.h"
+#include "ms_audio_channel.h"
 
 extern "C" {
 #include <libswscale/swscale.h>
@@ -46,4 +46,4 @@ public:
 
 };
 
-#endif //MSPLAYER_VIDEOCHANNEL_H
+#endif //MSPLAYER_MS_VIDEO_CHANNEL_H

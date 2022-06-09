@@ -1,4 +1,3 @@
-// TODO 第三节课新增 --- start
 #ifndef DERRY_PLAYER_LOG4C_H
 #define DERRY_PLAYER_LOG4C_H
 

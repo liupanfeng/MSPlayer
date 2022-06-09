@@ -6,10 +6,10 @@
 
 #include <cstring>
 #include <pthread.h>
-#include "AudioChannel.h"
-#include "VideoChannel.h" // 可以直接访问函数指针
-#include "JNICallbackHelper.h"
-#include "video_statel.h"
+#include "ms_audio_channel.h"
+#include "ms_video_channel.h" // 可以直接访问函数指针
+#include "jni_callback.h"
+#include "ms_video_statel.h"
 
 extern "C" { // ffmpeg是纯c写的，必须采用c的编译方式，否则奔溃
 #include <libavformat/avformat.h>
@@ -31,7 +31,7 @@ private:
     /*视频轨道 处理视频数据*/
     VideoChannel *video_channel = 0;
     /*通过jni 回调java方法*/
-    JNICallbakcHelper *helper = 0;
+    JniUtil *helper = 0;
     /*播放标识 是否播放*/
     bool isPlaying;
     /*渲染回调*/
@@ -49,7 +49,7 @@ public:
      * @param data_source  视频路径
      * @param helper 回调接口
      */
-    MSPlayer(const char *data_source, JNICallbakcHelper *helper);
+    MSPlayer(const char *data_source, JniUtil *helper);
     ~MSPlayer();
 
     /**
