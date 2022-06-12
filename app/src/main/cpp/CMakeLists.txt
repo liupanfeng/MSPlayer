@@ -21,9 +21,11 @@ set(RTMP ${CMAKE_SOURCE_DIR}/rtmp) # rtmp的路径
 
 include_directories(${FFMPEG}/include) # 导入ffmpeg的头文件
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -L${FFMPEG}/libs/${CMAKE_ANDROID_ARCH_ABI}") # ffmpeg库指定
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -L${RTMP}/libs/${CMAKE_ANDROID_ARCH_ABI}") # rtmp库指定
+#ffmpeg库指定
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -L${FFMPEG}/libs/${CMAKE_ANDROID_ARCH_ABI}")
+#rtmp库指定
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -L${RTMP}/libs/${CMAKE_ANDROID_ARCH_ABI}")
 
 # 批量导入 源文件
 file(GLOB src_files *.cpp)
@@ -53,7 +55,7 @@ target_link_libraries(
 
         rtmp
 
-        android  #  ANativeWindow 用来渲染画面
+        android  #ANativeWindow 用来渲染画面
 
         OpenSLES  #OpenSLES 用来播放PCM格式的音频
 
