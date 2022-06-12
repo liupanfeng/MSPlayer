@@ -94,6 +94,7 @@ Java_com_meishe_msplayer_MSPlayer_prepareNative(JNIEnv *env, jobject thiz, jstri
     msPlayer = new MSPlayer(data_source_, helper);
     msPlayer->setRenderCallback(renderFrame);
     msPlayer->prepare();
+    msPlayer->setJNICallback(helper);
     env->ReleaseStringUTFChars(data_source, data_source_);
 }
 
@@ -152,7 +153,6 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_meishe_msplayer_MSPlayer_setSurfaceNative(JNIEnv *env, jobject thiz, jobject surface) {
     pthread_mutex_lock(&mutex);
-
     // 先释放之前的显示窗口
     if (window) {
         ANativeWindow_release(window);
@@ -185,4 +185,13 @@ Java_com_meishe_msplayer_MSPlayer_seekNative(JNIEnv *env, jobject thiz, jint pla
     if (msPlayer) {
         msPlayer->seek(play_progress);
     }
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_meishe_msplayer_MSPlayer_getPlayState(JNIEnv *env, jobject thiz) {
+    if (msPlayer) {
+        return msPlayer->getPlayState();
+    }
+    return false;
 }

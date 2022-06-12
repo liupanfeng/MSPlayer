@@ -28,9 +28,9 @@ public:
     AVRational time_base;
 
 
-    JniUtil *jniCallbakcHelper = 0;
+    JniUtil *jniCallback = 0;
     void setJNICallbakcHelper(JniUtil *jniCallbakcHelper) {
-        this->jniCallbakcHelper = jniCallbakcHelper;
+        this->jniCallback = jniCallbakcHelper;
     }
 
     BaseChannel(int stream_index, AVCodecContext *codecContext,AVRational time_base)

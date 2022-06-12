@@ -20,6 +20,9 @@ private:
     jmethodID jmd_onError;
     /*播放音频进度回调 方法id*/
     jmethodID jmd_onProgress;
+    /*播放状态回调*/
+    jmethodID jmd_onPlayState;
+
 public:
     JniUtil(JavaVM *vm, JNIEnv *env, jobject job);
     ~JniUtil();
@@ -28,6 +31,8 @@ public:
     void onError(int thread_type, int error_code);
 
     void onProgress(int thread_type, int audio_time);
+
+    void onPlayState(int thread_type,int play_state);
 
 };
 

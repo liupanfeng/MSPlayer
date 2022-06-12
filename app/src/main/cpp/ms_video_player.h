@@ -42,6 +42,8 @@ private:
     pthread_mutex_t seek_mutex;
     /*停止 线程*/
     pthread_t pid_stop;
+    /*JNI 层回调 */
+    JniUtil *jniCallback = 0;
 
 public:
     /**
@@ -94,6 +96,13 @@ public:
      * @param pPlayer
      */
     void stop_(MSPlayer *pPlayer);
+
+    /*获取播放状态*/
+    bool getPlayState();
+
+
+    void setJNICallback(JniUtil *jniCallback) ;
+
 };
 
 

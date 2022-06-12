@@ -292,7 +292,11 @@ void MSPlayer::start() {
  * 子线程执行具体的代码逻辑
  */
 void MSPlayer::start_() {
+    if (jniCallback){
+        jniCallback->onPlayState(MS_THREAD_CHILD,1);
+    }
     while (isPlaying) {
+
         // AVPacket 可能是音频 也可能是视频（压缩包）
         AVPacket *packet = av_packet_alloc();
         if (video_channel && video_channel->packets.size() > AV_MAX_SIZE) {
@@ -332,6 +336,9 @@ void MSPlayer::start_() {
         }
     }// end while
     isPlaying = 0;
+    if (jniCallback){
+        jniCallback->onPlayState(MS_THREAD_CHILD,0);
+    }
     video_channel->stop();
     audio_channel->stop();  //音频停止
 }
@@ -419,10 +426,14 @@ void MSPlayer::stop() {
     // 只要用户关闭了，就不准你回调给Java成 start播放
     helper = nullptr;
     if (audio_channel) {
-        audio_channel->jniCallbakcHelper = nullptr;
+        audio_channel->jniCallback = nullptr;
     }
     if (video_channel) {
-        video_channel->jniCallbakcHelper = nullptr;
+        video_channel->jniCallback = nullptr;
+    }
+
+    if (jniCallback){
+        jniCallback= nullptr;
     }
 
 
@@ -441,10 +452,13 @@ void MSPlayer::stop() {
 void MSPlayer::stop_(MSPlayer *pPlayer) {
 
     isPlaying = false;
+    if (jniCallback){
+        jniCallback->onPlayState(MS_THREAD_CHILD,0);
+    }
     pthread_join(pid_prepare, nullptr);
     pthread_join(pid_start, nullptr);
 
-    // pid_prepare pid_start 就全部停止下来了  稳稳的停下来
+    // pid_prepare pid_start 全部停止下来了 安全的停下来
     if (avFormatContext) {
         avformat_close_input(&avFormatContext);
         avformat_free_context(avFormatContext);
@@ -453,7 +467,16 @@ void MSPlayer::stop_(MSPlayer *pPlayer) {
     DELETE(audio_channel);
     DELETE(video_channel);
     DELETE(pPlayer);
+    DELETE(jniCallback);
 
+}
+
+bool MSPlayer::getPlayState() {
+    return isPlaying;
+}
+
+void MSPlayer::setJNICallback(JniUtil *jniCallback) {
+    this->jniCallback=jniCallback;
 }
 
 

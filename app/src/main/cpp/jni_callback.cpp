@@ -20,6 +20,8 @@ JniUtil::JniUtil(JavaVM *vm, JNIEnv *env, jobject job) {
     jmd_onError = env->GetMethodID(clazz, "onError", "(I)V");
     /*播放音频的时间进度回调 方法id*/
     jmd_onProgress = env->GetMethodID(clazz, "onProgress", "(I)V");
+    /*播放状态回调*/
+    jmd_onPlayState =env->GetMethodID(clazz,"onPlayStateChange","(I)V");
 
 }
 
@@ -59,7 +61,7 @@ void JniUtil::onPrepared(int thread_type) {
 void JniUtil::onError(int thread_type, int error_code) {
     if (thread_type == MS_THREAD_MAIN){
         /*主线程*/
-        env->CallVoidMethod(job,jmd_onError);
+        env->CallVoidMethod(job,jmd_onError,error_code);
     } else{
         /*当前子线程的 JNIEnv  JNIEnv 不能传递*/
         JNIEnv *env_child;
@@ -87,3 +89,20 @@ void JniUtil::onProgress(int thread_type, int audio_time) {
     }
 }
 
+/**
+ * 播放状态回调
+ * @param thread_type
+ * @param play_state
+ */
+void JniUtil::onPlayState(int thread_type, int play_state) {
+    if (thread_type == MS_THREAD_MAIN) {
+        /*主线程*/
+        env->CallVoidMethod(job, jmd_onPlayState,play_state);
+    } else {
+        /*当前子线程的 JNIEnv*/
+        JNIEnv *env_child;
+        vm->AttachCurrentThread(&env_child, 0);
+        env_child->CallVoidMethod(job, jmd_onPlayState, play_state);
+        vm->DetachCurrentThread();
+    }
+}

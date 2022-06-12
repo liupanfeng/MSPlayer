@@ -289,8 +289,8 @@ int AudioChannel::getPCM() {
         audio_time = frame->best_effort_timestamp * av_q2d(time_base); // 必须这样计算后，才能拿到真正的时间搓
 
 
-        if (this->jniCallbakcHelper) {
-            jniCallbakcHelper->onProgress(MS_THREAD_CHILD, audio_time);
+        if (this->jniCallback) {
+            jniCallback->onProgress(MS_THREAD_CHILD, audio_time);
         }
 
         break; // 利用while循环 来写我们的逻辑

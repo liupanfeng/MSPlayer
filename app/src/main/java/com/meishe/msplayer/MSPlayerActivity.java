@@ -28,9 +28,7 @@ import com.meishe.msplayer.databinding.ActivityMainBinding;
 import java.io.File;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements MSPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener {
-
-    // Used to load the 'msplayer' library on application startup.
+public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener, MSPlayer.OnPlayStateCallback {
 
 
     private ActivityMainBinding mBinding;
@@ -38,6 +36,8 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
     private MSPlayer mMSPlayer;
     private int duration; // 获取native层的总时长
     private boolean isTouch;
+    private int mPlayState = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,21 +46,28 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mBinding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
-        requestPermission();
 
         initListener();
 
-
         mBinding.seekBar.setOnSeekBarChangeListener(this);
+
+        initPlayer();
     }
 
     private void initListener() {
         mBinding.btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mMSPlayer != null) {
-                    mMSPlayer.start();
+                if (mPlayState==0){
+                    if (mMSPlayer != null) {
+                        mMSPlayer.start();
+                    }
+                }else{
+                    if (mMSPlayer != null) {
+                        mMSPlayer.stop();
+                    }
                 }
+
             }
         });
 
@@ -82,22 +89,22 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
                 mBinding.llTopContainer.setVisibility(View.GONE);
                 mBinding.llBottomContainer.setVisibility(View.GONE);
             }
-        },3000);
+        }, 3000);
     }
 
     private void initPlayer() {
         mMSPlayer = new MSPlayer();
         mMSPlayer.setSurfaceView(mBinding.surfaceView);
-        mMSPlayer.setOnPreparedListener(MainActivity.this);
+        mMSPlayer.setOnPreparedListener(MSPlayerActivity.this);
 
         mMSPlayer.setOnErrorListener(new MSPlayer.OnErrorListener() {
             @Override
             public void onError(String errorCode) {
-                Toast.makeText(MainActivity.this, "error:"+errorCode, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MSPlayerActivity.this, "error:" + errorCode, Toast.LENGTH_SHORT).show();
             }
         });
 
-        String filePath= new File(Environment.
+        String filePath = new File(Environment.
                 getExternalStorageDirectory() +
                 File.separator + "demo.mp4")
                 .getAbsolutePath();
@@ -110,13 +117,13 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
         int screenHeight = dm.heightPixels;
 
 
-        Bitmap videoThumb = getVideoThumbnail(filePath,screenWidth,
+        Bitmap videoThumb = getVideoThumbnail(filePath, screenWidth,
                 screenHeight, MediaStore.Video.Thumbnails.MINI_KIND);
 
         mBinding.surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                if (holder==null){
+                if (holder == null) {
                     return;
                 }
                 Paint paint = new Paint();
@@ -124,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
                 paint.setStyle(Paint.Style.STROKE);
                 /*先锁住画布*/
                 Canvas canvas = holder.lockCanvas();
-                canvas.drawBitmap(videoThumb,0,0,paint);
+                canvas.drawBitmap(videoThumb, 0, 0, paint);
                 holder.unlockCanvasAndPost(canvas);
 
             }
@@ -166,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
             }
         });
 
+        mMSPlayer.setOnPlayStateCallback(this);
         mMSPlayer.prepare();
     }
 
@@ -187,26 +195,6 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
     }
 
 
-    /**
-     * 获取授权
-     */
-    private void requestPermission() {
-        XXPermissions.with(this).permission(Permission.READ_EXTERNAL_STORAGE)
-                .permission(Permission.WRITE_EXTERNAL_STORAGE)
-                .request(new OnPermissionCallback() {
-                    @Override
-                    public void onGranted(List<String> permissions, boolean all) {
-                        if (all) {
-                            initPlayer();
-                        }
-                    }
-
-                    @Override
-                    public void onDenied(List<String> permissions, boolean never) {
-
-                    }
-                });
-    }
 
 
     @Override
@@ -269,23 +257,23 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
     }
 
 
-
     /**
      * 获取视频的第一帧缩略图
      * 先通过ThumbnailUtils来创建一个视频的缩略图，然后再利用ThumbnailUtils来生成指定大小的缩略图。
      * 如果想要的缩略图的宽和高都小于MICRO_KIND，则类型要使用MICRO_KIND作为kind的值，这样会节省内存。
+     *
      * @param videoPath 视频的路径
-     * @param width 指定输出视频缩略图的宽度
-     * @param height 指定输出视频缩略图的高度度
-     * @param kind 参照MediaStore.Images(Video).Thumbnails类中的常量MINI_KIND和MICRO_KIND。
-     *      其中，MINI_KIND: 512 x 384，MICRO_KIND: 96 x 96
+     * @param width     指定输出视频缩略图的宽度
+     * @param height    指定输出视频缩略图的高度度
+     * @param kind      参照MediaStore.Images(Video).Thumbnails类中的常量MINI_KIND和MICRO_KIND。
+     *                  其中，MINI_KIND: 512 x 384，MICRO_KIND: 96 x 96
      * @return 指定大小的视频缩略图
      */
     public static Bitmap getVideoThumbnail(String videoPath, int width, int height, int kind) {
         Bitmap bitmap = null;
         // 获取视频的缩略图
         bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind); //调用ThumbnailUtils类的静态方法createVideoThumbnail获取视频的截图；
-        if(bitmap!= null){
+        if (bitmap != null) {
             bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
                     ThumbnailUtils.OPTIONS_RECYCLE_INPUT);//调用ThumbnailUtils类的静态方法extractThumbnail将原图片（即上方截取的图片）转化为指定大小；
         }
@@ -305,4 +293,25 @@ public class MainActivity extends AppCompatActivity implements MSPlayer.OnPrepar
         return media.getFrameAtTime();
     }
 
+    /**
+     * 播放状态回调
+     *
+     * @param state 0：停止  1；播放
+     */
+    @Override
+    public void onPlayStateChange(int state) {
+        Log.d("lpf", "state=" + state);
+        mPlayState = state;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mPlayState==0){
+                    //暂停状态
+                    mBinding.btnPlay.setBackgroundResource(R.mipmap.icon_edit_play);
+                }else{
+                    mBinding.btnPlay.setBackgroundResource(R.mipmap.icon_edit_pause);
+                }
+            }
+        });
+    }
 }

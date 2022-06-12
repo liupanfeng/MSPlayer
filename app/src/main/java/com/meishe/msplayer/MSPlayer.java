@@ -15,39 +15,29 @@ import androidx.annotation.NonNull;
  */
 public class MSPlayer implements SurfaceHolder.Callback{
 
-    /* TODO 第二节课新增 --- start */
 
-    // 错误代码 ================ 如下
     // 打不开视频
-    // #define FFMPEG_CAN_NOT_OPEN_URL 1
     private static final int FFMPEG_CAN_NOT_OPEN_URL = 1;
 
     // 找不到流媒体
-    // #define FFMPEG_CAN_NOT_FIND_STREAMS 2
     private static final int FFMPEG_CAN_NOT_FIND_STREAMS = 2;
 
     // 找不到解码器
-    // #define FFMPEG_FIND_DECODER_FAIL 3
     private static final int FFMPEG_FIND_DECODER_FAIL = 3;
 
     // 无法根据解码器创建上下文
-    // #define FFMPEG_ALLOC_CODEC_CONTEXT_FAIL 4
     private static final int FFMPEG_ALLOC_CODEC_CONTEXT_FAIL = 4;
 
     //  根据流信息 配置上下文参数失败
-    // #define FFMPEG_CODEC_CONTEXT_PARAMETERS_FAIL 6
     private static final int FFMPEG_CODEC_CONTEXT_PARAMETERS_FAIL = 6;
 
     // 打开解码器失败
-    // #define FFMPEG_OPEN_DECODER_FAIL 7
     private static final int FFMPEG_OPEN_DECODER_FAIL = 7;
 
     // 没有音视频
-    // #define FFMPEG_NOMEDIA 8
     private static final int FFMPEG_NOMEDIA = 8;
-    /* TODO 第二节课新增 --- end */
 
-    private SurfaceHolder surfaceHolder; // TODO 第三节课新增
+    private SurfaceHolder surfaceHolder;
 
 
     static {
@@ -56,7 +46,8 @@ public class MSPlayer implements SurfaceHolder.Callback{
 
     MSPlayer(){}
 
-    private OnPreparedListener onPreparedListener; // C++层准备情况的接口
+    /*C++层准备情况的接口*/
+    private OnPreparedListener onPreparedListener;
 
     /**
      * 设置准备OK的监听方法
@@ -65,7 +56,7 @@ public class MSPlayer implements SurfaceHolder.Callback{
         this.onPreparedListener = onPreparedListener;
     }
 
-    // 媒体源（文件路径， 直播地址rtmp）
+    /* 媒体源（文件路径， 直播地址rtmp）*/
     private String dataSource;
 
     public void setDataSource(String dataSource) {
@@ -122,15 +113,7 @@ public class MSPlayer implements SurfaceHolder.Callback{
 
         setSurfaceNative(surfaceHolder.getSurface());
     }
-    private native void prepareNative(String dataSource);
-    private native void startNative();
-    private native void stopNative();
-    private native void releaseNative();
-    private native void setSurfaceNative(Surface surface); // TODO 第三节课增加的
 
-    private native int getDurationNative() ;
-
-    private native void seekNative(int playProgress);
 
 
     /**
@@ -174,6 +157,16 @@ public class MSPlayer implements SurfaceHolder.Callback{
         }
     }
 
+    /**
+     * jni层回调播放状态
+     * @param state
+     */
+    public void onPlayStateChange(int state){
+        if (mOnPlayStateCallback!=null){
+            mOnPlayStateCallback.onPlayStateChange(state);
+        }
+    }
+
     interface OnErrorListener {
         void onError(String errorCode);
     }
@@ -182,15 +175,32 @@ public class MSPlayer implements SurfaceHolder.Callback{
         this.onErrorListener = onErrorListener;
     }
 
-    private OnErrorListener onErrorListener; // TODO 第二节课新增
-
+    private OnErrorListener onErrorListener;
 
     public int getDuration() {
         return getDurationNative();
     }
 
+//---------------------播放状态------------------------------
 
-    // TODO 第七节课增加 2.1
+    private OnPlayStateCallback mOnPlayStateCallback;
+
+    public void setOnPlayStateCallback(OnPlayStateCallback onPlayStateCallback) {
+        this.mOnPlayStateCallback = onPlayStateCallback;
+    }
+
+    public interface OnPlayStateCallback{
+        /**
+         * 播放状态回调
+          * @param state 0：停止  1；播放
+         */
+      void onPlayStateChange(int state);
+
+    }
+
+
+
+//----------------------播放进度----------------------
     /**
      * 给jni反射调用的  准备成功
      */
@@ -214,6 +224,7 @@ public class MSPlayer implements SurfaceHolder.Callback{
         this.onProgressListener = onProgressListener;
     }
 
+//-------------------------------end------------------------
 
 
     @Override
@@ -238,5 +249,16 @@ public class MSPlayer implements SurfaceHolder.Callback{
     }
 
 
+//----------------------------native---------------------------------
+    private native void prepareNative(String dataSource);
+    private native void startNative();
+    private native void stopNative();
+    private native void releaseNative();
+    private native void setSurfaceNative(Surface surface);
+    private native int getDurationNative() ;
+    private native void seekNative(int playProgress);
+    private native boolean getPlayState();
+
+    //------------------------------end-------------------------
 
 }
