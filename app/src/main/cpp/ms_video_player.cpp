@@ -67,7 +67,6 @@ void MSPlayer::prepare_() {
      * 因为FFmpeg源码是纯C的，使用上下文Context，为了贯彻环境，
      * 就相当于Java的this能不像C++、Java 够操作成员
      * */
-
     /*avFormatContext 视频格式上下文 */
     avFormatContext = avformat_alloc_context();
 
@@ -229,8 +228,7 @@ void MSPlayer::prepare_() {
     }
 }
 
-// 此函数是被MainActivity的onResume调用下来的（主线程）
-// data_source == 文件io流，直播网络rtmp，耗时操作，所以必须使用子线程
+/*data_source == 文件io流，直播网络rtmp，耗时操作，所以必须使用子线程*/
 void MSPlayer::prepare() {
     /*创建子线程
      * 第一个参数：线程id

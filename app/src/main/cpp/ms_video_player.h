@@ -11,7 +11,8 @@
 #include "jni_callback.h"
 #include "ms_video_statel.h"
 
-extern "C" { // ffmpeg是纯c写的，必须采用c的编译方式，否则奔溃
+/*ffmpeg是纯c写的，必须采用c的编译方式，*/
+extern "C" {
 #include <libavformat/avformat.h>
 };
 
