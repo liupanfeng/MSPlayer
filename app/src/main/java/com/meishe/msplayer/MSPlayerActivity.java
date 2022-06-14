@@ -94,7 +94,7 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
                 mBinding.llTopContainer.setVisibility(View.GONE);
                 mBinding.llBottomContainer.setVisibility(View.GONE);
             }
-        }, 3000);
+        }, 6000);
     }
 
     private void initPlayer() {

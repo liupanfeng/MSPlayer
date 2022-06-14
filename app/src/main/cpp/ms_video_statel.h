@@ -6,7 +6,7 @@
 #define NE_PLAYER_MACRO_H
 
 /*定义队列阈值，没有这个会造成内存泄漏，并发生崩溃*/
-#define AV_MAX_SIZE 120
+#define AV_MAX_SIZE 10
 
 /*主线程*/
 #define MS_THREAD_MAIN 1

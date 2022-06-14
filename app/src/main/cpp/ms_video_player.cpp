@@ -336,9 +336,6 @@ void MSPlayer::start_() {
         }
     }// end while
     isPlaying = 0;
-    if (jniCallback){
-        jniCallback->onPlayState(MS_THREAD_CHILD,0);
-    }
     video_channel->stop();
     audio_channel->stop();  //音频停止
 }
