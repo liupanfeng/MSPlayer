@@ -423,6 +423,9 @@ void *task_stop(void *args) {
 
 void MSPlayer::stop() {
 
+    if (jniCallback){
+        jniCallback->onPlayState(MS_THREAD_MAIN,0);
+    }
     // 只要用户关闭了，就不准你回调给Java成 start播放
     helper = nullptr;
     if (audio_channel) {
@@ -452,9 +455,6 @@ void MSPlayer::stop() {
 void MSPlayer::stop_(MSPlayer *pPlayer) {
 
     isPlaying = false;
-    if (jniCallback){
-        jniCallback->onPlayState(MS_THREAD_CHILD,0);
-    }
     pthread_join(pid_prepare, nullptr);
     pthread_join(pid_start, nullptr);
 

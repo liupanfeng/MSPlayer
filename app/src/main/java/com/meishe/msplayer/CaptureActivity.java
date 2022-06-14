@@ -4,12 +4,15 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.os.Environment;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 
 import com.coremedia.iso.boxes.Container;
 import com.googlecode.mp4parser.FileDataSourceImpl;
@@ -28,34 +31,35 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
 
     private ActivityCaptureBinding mBinding;
 
-    private SurfaceView surfaceview;
-    private SurfaceHolder surfaceHolder;
+    private SurfaceView mSurfaceview;
+    private SurfaceHolder mSurfaceHolder;
 
-    private Camera camera;
+    private Camera mCamera;
     /*拍摄参数*/
-    private Camera.Parameters parameters;
+    private Camera.Parameters mParameters;
 
-    private int width = 1280;
-    private int height = 720;
+    private int mWidth = 1280;
+    private int mHeight = 720;
     /*帧率*/
-    private int frameRate = 30;
+    private int mFrameRate = 30;
     /*比特率*/
-    int biterate = 8500 * 1000;
+    int mBiterate = 8500 * 1000;
 
-    private static int yuvQueueSize = 10;
+    private static int mYuvQueueSize = 10;
 
     /*待解码视频缓冲队列，静态成员*/
-    public static ArrayBlockingQueue<byte[]> YUVQueue =
-            new ArrayBlockingQueue<byte[]>(yuvQueueSize);
+    public static ArrayBlockingQueue<byte[]> mYUVQueue =
+            new ArrayBlockingQueue<byte[]>(mYuvQueueSize);
 
-    private AvcEncoder avcCodec;
+    private AvcEncoder mAvcCodec;
     /*本地生成视频路径*/
-    private String mp4Path ;
+    private String mMp4Path;
 
-    private String h264Path;
+    private String mH264Path;
 
     private Context mContext;
 
+    private int mCaptureState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,12 +68,59 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
         setContentView(mBinding.getRoot());
 
         mContext = this;
-        h264Path = mContext.getCacheDir().getAbsolutePath() + "/test1.h264";
-        mp4Path=mContext.getCacheDir().getAbsolutePath()+File.separator + "test.mp4";;
-        surfaceHolder = mBinding.surfaceview.getHolder();
-        surfaceHolder.addCallback(this);
+        mH264Path = PathUtils.getEncodeDir() + File.separator+"test.h264";
+        mMp4Path = PathUtils.getEncodeDir() + File.separator + "test.mp4";
+        Log.e("lpf", "h264Path-=" + mH264Path + " mp4Path="+ mMp4Path);
+        mSurfaceHolder = mBinding.surfaceview.getHolder();
+        mSurfaceHolder.addCallback(this);
 
+        initListener();
 
+    }
+
+    private void initListener() {
+        mBinding.flTakePhotos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mCaptureState==0){
+                    mCaptureState=1;
+                    mBinding.ivTakePhoto.setBackgroundResource(R.mipmap.capture_stop_video);
+
+                    //启动编码线程
+                    mAvcCodec.StartEncoderThread();
+
+                }else{
+                    mCaptureState=0;
+                    mBinding.ivTakePhoto.setBackgroundResource(R.mipmap.capture_take_photo);
+                    mBinding.flMiddleParent.setVisibility(View.VISIBLE);
+
+                    mAvcCodec.StopThread();
+                    h264ToMp4();
+
+                }
+            }
+        });
+
+        mBinding.ivBackDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!TextUtils.isEmpty(mMp4Path)){
+                    File file=new File(mMp4Path);
+                    PathUtils.deleteFile(file.getAbsolutePath());
+                    mBinding.flMiddleParent.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        mBinding.ivConfirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(CaptureActivity.this,MSPlayerActivity.class);
+                intent.putExtra(Constants.INTENT_KEY_VIDEO_PATH, mMp4Path);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
 
@@ -80,10 +131,11 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
      * @param length
      */
     private void putYUVData(byte[] data, int length) {
-        if (YUVQueue.size() >= 10) {
-            YUVQueue.poll();
+        if (mYUVQueue.size() >= 10) {
+            mYUVQueue.poll();
         }
-        YUVQueue.add(data);
+        mYUVQueue.add(data);
+        Log.e("lpf", "putYUVData---UVQueue.size()" + mYUVQueue.size());
     }
 
     private Camera getBackCamera() {
@@ -93,6 +145,7 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
             c = Camera.open(0);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e("lpf", "Camera.open---error:" + e.getMessage());
         }
         //获取Camera的实例失败时返回null
         return c;
@@ -104,14 +157,14 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
             try {
                 camera.setPreviewCallback(this);
                 camera.setDisplayOrientation(90);
-                if (parameters == null) {
-                    parameters = camera.getParameters();
+                if (mParameters == null) {
+                    mParameters = camera.getParameters();
                 }
 
-                parameters.setPreviewFormat(ImageFormat.NV21);
-                parameters.setPreviewSize(width, height);
-                camera.setParameters(parameters);
-                camera.setPreviewDisplay(surfaceHolder);
+                mParameters.setPreviewFormat(ImageFormat.NV21);
+                mParameters.setPreviewSize(mWidth, mHeight);
+                camera.setParameters(mParameters);
+                camera.setPreviewDisplay(mSurfaceHolder);
 
                 camera.startPreview();
             } catch (Exception e) {
@@ -122,44 +175,52 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+        Log.e("lpf", "onPreviewFrame==" + data);
         putYUVData(data, data.length);
     }
 
 
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
-        camera = getBackCamera();
-        startCamera(camera);
+        Log.e("lpf", "---------surfaceCreated------------");
+        mCamera = getBackCamera();
+        startCamera(mCamera);
 
         //创建AvEncoder对象
-        avcCodec = new AvcEncoder(width, height, frameRate, biterate,h264Path);
-        //启动编码线程
-        avcCodec.StartEncoderThread();
+        mAvcCodec = new AvcEncoder(mWidth, mHeight, mFrameRate, mBiterate, mH264Path);
+
     }
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-
+        Log.e("lpf", "---------surfaceChanged------------");
     }
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-        if (null != camera) {
-            camera.setPreviewCallback(null);
-            camera.stopPreview();
-            camera.release();
-            camera = null;
-            avcCodec.StopThread();
-            h264ToMp4();
+        Log.e("lpf", "---------surfaceDestroyed------------");
+        if (null != mCamera) {
+            mCamera.setPreviewCallback(null);
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera = null;
+
         }
     }
 
     private void h264ToMp4() {
+        Log.e("lpf", "h264ToMp4 start----------------");
+        File file=new File(mH264Path);
+        if (!file.exists()){
+            Log.e("lpf", "h264 file is not exists");
+            return;
+        }
         H264TrackImpl h264Track = null;
         try {
-            h264Track = new H264TrackImpl(new FileDataSourceImpl(h264Path));
+            h264Track = new H264TrackImpl(new FileDataSourceImpl(mH264Path));
         } catch (IOException e) {
             e.printStackTrace();
+            Log.e("lpf", "H264TrackImpl error:" + e.getMessage());
         }
 
         Movie movie = new Movie();
@@ -169,11 +230,12 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
 
         FileChannel fc = null;
         try {
-            fc = new FileOutputStream(new File(mp4Path)).getChannel();
+            fc = new FileOutputStream(new File(mMp4Path)).getChannel();
             container.writeContainer(fc);
             fc.close();
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e("lpf", "container.writeContainer error:" + e.getMessage());
         }
 
 

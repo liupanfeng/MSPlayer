@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -12,6 +13,7 @@ import android.media.ThumbnailUtils;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -37,6 +39,7 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
     private int duration; // 获取native层的总时长
     private boolean isTouch;
     private int mPlayState = 0;
+    private String mVideoPath;
 
 
     @Override
@@ -48,9 +51,11 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
         setContentView(mBinding.getRoot());
 
         initListener();
-
         mBinding.seekBar.setOnSeekBarChangeListener(this);
-
+        Intent intent = getIntent();
+        if (intent!=null){
+            mVideoPath=intent.getStringExtra(Constants.INTENT_KEY_VIDEO_PATH);
+        }
         initPlayer();
     }
 
@@ -100,16 +105,25 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
         mMSPlayer.setOnErrorListener(new MSPlayer.OnErrorListener() {
             @Override
             public void onError(String errorCode) {
-                Toast.makeText(MSPlayerActivity.this, "error:" + errorCode, Toast.LENGTH_SHORT).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MSPlayerActivity.this, "error:" + errorCode, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 
-        String filePath = new File(Environment.
+
+
+        if (TextUtils.isEmpty(mVideoPath)){
+            mVideoPath = new File(Environment.
                 getExternalStorageDirectory() +
+//                File.separator + "fly.mp4")
                 File.separator + "demo.mp4")
                 .getAbsolutePath();
-
-        mMSPlayer.setDataSource(filePath);
+        }
+        mMSPlayer.setDataSource(mVideoPath);
 
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -117,8 +131,8 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
         int screenHeight = dm.heightPixels;
 
 
-        Bitmap videoThumb = getVideoThumbnail(filePath, screenWidth,
-                screenHeight, MediaStore.Video.Thumbnails.MINI_KIND);
+        Bitmap videoThumb = getVideoThumbnail(mVideoPath, screenWidth,
+                600, MediaStore.Video.Thumbnails.MINI_KIND);
 
         mBinding.surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -195,8 +209,6 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
     }
 
 
-
-
     @Override
     protected void onStop() {
         super.onStop();
@@ -232,14 +244,15 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         isTouch = false;
-        int seekBarProgress = seekBar.getProgress(); // 获取当前seekbar当前进度
+        /*获取当前seekbar当前进度*/
+        int seekBarProgress = seekBar.getProgress();
         // SeekBar1~100  -- 转换 -->  C++播放的时间（61.546565）
         int playProgress = seekBarProgress * duration / 100;
         mMSPlayer.seek(playProgress);
     }
 
-    // 119 ---> 1.多一点点
-    private String getMinutes(int duration) { // 给我一个duration，转换成xxx分钟
+    /*给我一个duration，转换成xxx分钟*/
+    private String getMinutes(int duration) {
         int minutes = duration / 60;
         if (minutes <= 9) {
             return "0" + minutes;
@@ -247,8 +260,8 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
         return "" + minutes;
     }
 
-    // 119 ---> 60 59
-    private String getSeconds(int duration) { // 给我一个duration，转换成xxx秒
+    /*给我一个duration，转换成xxx秒*/
+    private String getSeconds(int duration) { //
         int seconds = duration % 60;
         if (seconds <= 9) {
             return "0" + seconds;
@@ -271,11 +284,12 @@ public class MSPlayerActivity extends AppCompatActivity implements MSPlayer.OnPr
      */
     public static Bitmap getVideoThumbnail(String videoPath, int width, int height, int kind) {
         Bitmap bitmap = null;
-        // 获取视频的缩略图
-        bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind); //调用ThumbnailUtils类的静态方法createVideoThumbnail获取视频的截图；
+        bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind);
+        /*调用ThumbnailUtils类的静态方法createVideoThumbnail获取视频的截图；*/
         if (bitmap != null) {
             bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
-                    ThumbnailUtils.OPTIONS_RECYCLE_INPUT);//调用ThumbnailUtils类的静态方法extractThumbnail将原图片（即上方截取的图片）转化为指定大小；
+                    /*调用ThumbnailUtils类的静态方法extractThumbnail将原图片（即上方截取的图片）转化为指定大小；*/
+                    ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
         }
         return bitmap;
     }
