@@ -43,7 +43,7 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
     /*帧率*/
     private int mFrameRate = 30;
     /*比特率*/
-    int mBiterate = 8500 * 1000;
+    int mBiteRate = 8500 * 1000;
 
     private static int mYuvQueueSize = 10;
 
@@ -187,7 +187,7 @@ public class CaptureActivity extends AppCompatActivity implements SurfaceHolder.
         startCamera(mCamera);
 
         //创建AvEncoder对象
-        mAvcCodec = new AvcEncoder(mWidth, mHeight, mFrameRate, mBiterate, mH264Path);
+        mAvcCodec = new AvcEncoder(mWidth, mHeight, mFrameRate, mBiteRate, mH264Path);
 
     }
 
