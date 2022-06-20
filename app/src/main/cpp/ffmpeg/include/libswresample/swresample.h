@@ -447,6 +447,11 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * output sample rate may be a poor choice to represent the delay, similarly
  * for upsampling and the input sample rate.
  *
+ * 获取下一个输入样本相对于下一个输出样本将经历的延迟。如果提供的输入多于可用的输出空间，
+ * 则 Swresample 可以缓冲数据，采样率之间的转换也需要延迟。此函数返回所有此类延迟的总和。
+ * 确切的延迟不一定是输入或输出采样率的整数值。尤其是在以较大值进行下采样时，
+ * 输出采样率可能不是表示延迟的糟糕选择，上采样和输入采样率也是如此。
+ *
  * @param s     swr context
  * @param base  timebase in which the returned delay will be:
  *              @li if it's set to 1 the returned delay is in seconds

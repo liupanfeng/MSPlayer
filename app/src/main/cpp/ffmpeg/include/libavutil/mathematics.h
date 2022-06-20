@@ -75,6 +75,7 @@
 
 /**
  * Rounding methods.
+ * 舍入方法
  */
 enum AVRounding {
     AV_ROUND_ZERO     = 0, ///< Round toward zero.
