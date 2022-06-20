@@ -75,18 +75,6 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="7dp"
                 android:layout_marginRight="8dp"/>
-            <RelativeLayout
-                android:id="@+id/voiceLayout"
-                android:layout_width="33dp"
-                android:layout_height="match_parent"
-                android:visibility="gone">
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:background="@mipmap/icon_edit_volumeup"
-                    android:layout_centerVertical="true"
-                    android:layout_marginRight="13dp"/>
-            </RelativeLayout>
         </LinearLayout>
     </RelativeLayout>
 

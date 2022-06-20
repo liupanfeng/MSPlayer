@@ -87,6 +87,9 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
  * The allocated image buffer has to be freed by using
  * av_freep(&pointers[0]).
  *
+ * 分配大小为 w 和 h 以及像素格式 pix_fmt 的图像，并相应地填充指针和线条大小。
+ * 必须使用 av_freep(&pointers[0]) 释放分配的图像缓冲区。
+ *
  * @param align the value to use for buffer size alignment
  * @return the size in bytes required for the image buffer, a negative
  * error code in case of failure

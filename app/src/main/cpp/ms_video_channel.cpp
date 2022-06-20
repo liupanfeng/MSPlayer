@@ -35,9 +35,9 @@ void dropAVPacket(queue<AVPacket *> &q) {
 }
 
 
-VideoChannel::VideoChannel(int stream_index, AVCodecContext *codecContext,AVRational time_base,
+VideoChannel::VideoChannel(int stream_index, AVCodecContext *codecContext, AVRational time_base,
                            int fps)
-        : BaseChannel(stream_index, codecContext,time_base) ,fps(fps){
+        : BaseChannel(stream_index, codecContext, time_base), fps(fps) {
     frames.setSyncCallback(dropAVFrame);
     packets.setSyncCallback(dropAVPacket);
 }
@@ -65,6 +65,7 @@ void *task_video_decode(void *args) {
     return nullptr;
 }
 
+/*线程回调函数*/
 void *task_video_play(void *args) {
     auto *video_channel = static_cast<VideoChannel *>(args);
     video_channel->video_play();
@@ -95,42 +96,47 @@ void VideoChannel::start() {
 void VideoChannel::video_decode() {
     AVPacket *pkt = 0;
     while (isPlaying) {
-        if (isPlaying&& frames.size() > AV_MAX_SIZE){
-            av_usleep(10*000);
+        if (isPlaying && frames.size() > AV_MAX_SIZE) {
+            av_usleep(10 * 000);
             continue;
         }
-        int ret = packets.getQueueAndDel(pkt); // 阻塞式函数
+        /*阻塞式函数*/
+        int ret = packets.getQueueAndDel(pkt);
         if (!isPlaying) {
-            break; // 如果关闭了播放，跳出循环，releaseAVPacket(&pkt);
+            /*如果关闭了播放跳出循环，releaseAVPacket(&pkt);*/
+            break;
         }
 
-        if (!ret) { // ret == 0
-            /* 继续（生产太慢(压缩包加入队列)，消费就等一下）*/
+        if (!ret) {
+            /* 可能是生产数据慢没拿到数据*/
             continue;
         }
 
-        /*1.发送pkt（压缩包）给缓冲区，  2.从缓冲区拿出来（原始包）*/
+        /*
+         * 将获取到的 AVPackage* 数据通过avcodec_send_packet 函数丢给ffmpeg缓冲区 解码操作
+         * */
         ret = avcodec_send_packet(codecContext, pkt);
 
         if (ret) {
             break;
         }
 
-        /*下面是从 FFmpeg缓冲区 获取 原始包  AVFrame： 解码后的视频原始数据包*/
+
         AVFrame *frame = av_frame_alloc();
+        /*从ffmpeg缓冲区 获取原始包AVFrame数据，原始数据包yuv420数据*/
         ret = avcodec_receive_frame(codecContext, frame);
         if (ret == AVERROR(EAGAIN)) {
-            /*B帧  B帧参考前面成功  B帧参考后面失败 可能是P帧没有出来，再拿一次就行了*/
+            /*获取视频数据失败，可能是B帧数据需要参考前面视频帧以及后边的视频帧，需要继续获取*/
             continue;
         } else if (ret != 0) {
-            if (frame){
+            if (frame) {
                 releaseAVFrame(&frame);
             }
             break;
         }
         /*将原始包放到 帧队列 */
         frames.insertToQueue(frame);
-        /*使用完 记得释放 否则会造成内容泄漏*/
+        /*使用完记得释放 否则会造成内容泄漏*/
         av_packet_unref(pkt);
         releaseAVPacket(&pkt);
     }
@@ -139,28 +145,36 @@ void VideoChannel::video_decode() {
     releaseAVPacket(&pkt);
 }
 
-/*把队列里面的原始包(AVFrame *)取出来播放*/
+/**
+ * 把队列里面的原始包(AVFrame *)取出来播放
+ */
 void VideoChannel::video_play() {
 
-    // SWS_FAST_BILINEAR：速度快可能会模糊
-    // SWS_BILINEAR 适中算法
-
     AVFrame *frame = nullptr;
-    uint8_t *dst_data[4]; // RGBA
-    int dst_linesize[4]; // RGBA
-    // 原始包（YUV数据）  ---->[libswscale]   Android屏幕（RGBA数据）
-    //给 dst_data 申请内存   width * height * 4
+    /*接收RGBA数据*/
+    uint8_t *dst_data[4];
+    /*接收RGBA 数据长度*/
+    int dst_linesize[4];
+
+    /*
+     * 原始包（YUV数据） 通过libswscale方法进行数据转换 Android屏幕（RGBA数据）
+     * dst_data 申请内存   width * height * 4
+     * */
     av_image_alloc(dst_data, dst_linesize,
                    codecContext->width, codecContext->height,
                    AV_PIX_FMT_RGBA, 1);
-    /* yuv -> rgba*/
+    /*
+     * 初始化转换上下文：SwsContext
+     * 第七个参数：yuv 转rgba flag ：SWS_FAST_BILINEAR，快速双线性，速度快可能会模糊，
+     * 所以选择SWS_BILINEAR普通双线性就好
+     * */
     SwsContext *sws_ctx = sws_getContext(
-            // 下面是输入环节
+            /*输入环节*/
             codecContext->width,
             codecContext->height,
-            codecContext->pix_fmt, // 自动获取 xxx.mp4 的像素格式  AV_PIX_FMT_YUV420P
-
-            // 下面是输出环节
+            /*自动获取 xxx.mp4 的像素格式 AV_PIX_FMT_YUV420P*/
+            codecContext->pix_fmt,
+            /*输出环节*/
             codecContext->width,
             codecContext->height,
             AV_PIX_FMT_RGBA,
@@ -169,20 +183,22 @@ void VideoChannel::video_play() {
     while (isPlaying) {
         int ret = frames.getQueueAndDel(frame);
         if (!isPlaying) {
-            /*如果关闭了播放，跳出循环，releaseAVPacket(&pkt);*/
+            /*如果关闭了播放跳出循环，releaseAVPacket(&pkt);*/
             break;
         }
         if (!ret) {
-            /* 继续（生产太慢(压缩包加入队列)，消费就等一下）*/
+            /* 压缩包加入队列慢，继续*/
             continue;
         }
-        // 格式转换 yuv ---> rgba
+        /*
+         * 将yuv格式数据转换成rgba数据
+         * */
         sws_scale(sws_ctx,
-                // 下面是输入环节 YUV的数据
+                /*输入环节 YUV的数据*/
                   frame->data, frame->linesize,
                   0, codecContext->height,
 
-                // 下面是输出环节  成果：RGBA数据
+                /*输出环节:RGBA数据*/
                   dst_data,
                   dst_linesize
         );
@@ -207,17 +223,15 @@ void VideoChannel::video_play() {
 
         if (time_diff > 0) {
             // 视频时间 > 音频时间： 要等音频，所以控制视频播放慢一点（等音频）
-            if (time_diff > 1)
-            {
+            if (time_diff > 1) {
                 /*音频预视频插件很大， 拖动条 特色场景  音频 和 视频 差值很大，我不能睡眠那么久，否则是大Bug*/
                 /*如果音频和视频差值很大，稍微睡一下*/
                 av_usleep((real_delay * 2) * 1000000);
-            }
-            else
-            {   // 说明：0~1之间：音频与视频差距不大，所以可以那（当前帧实际延时时间 + 音视频差值）
+            } else {   // 说明：0~1之间：音频与视频差距不大，所以可以那（当前帧实际延时时间 + 音视频差值）
                 av_usleep((real_delay + time_diff) * 1000000); // 单位是微妙：所以 * 1000000
             }
-        } if (time_diff < 0) {
+        }
+        if (time_diff < 0) {
             /*丢包：在frames 和 packets 中的队列*/
             /* 视频时间 < 音频时间： 要追音频，所以控制视频播放快一点（追音频） 【丢包】I帧是绝对不能丢 */
             /*经验值 0.05 -0.234454   fabs == 0.234454*/
@@ -233,14 +247,16 @@ void VideoChannel::video_play() {
 
 
 
-        /*SurfaceView ----- ANatvieWindows NatvieWindows 渲染工作
-         * 拿不到Surface，只能回调给 native-lib.cpp*/
+        /*
+         * 将得到的rgba数据进行回调，回调给ANativeWindow进行渲染播放
+         * */
         renderCallback(dst_data[0], codecContext->width, codecContext->height, dst_linesize[0]);
-        releaseAVFrame(&frame); // 释放原始包，因为已经被渲染完了，没用了
+        /*释放原始包，已经被渲染完了*/
+        releaseAVFrame(&frame);
     }
     /*出现错误，所退出的循环，都要释放frame*/
     releaseAVFrame(&frame);
-    isPlaying =false;
+    isPlaying = false;
     av_free(&dst_data[0]);
     sws_freeContext(sws_ctx);
 }
@@ -250,7 +266,7 @@ void VideoChannel::setRenderCallback(RenderCallback renderCallback) {
 }
 
 void VideoChannel::setAudioChannel(AudioChannel *audio_channel) {
-    this->audio_channel=audio_channel;
+    this->audio_channel = audio_channel;
 }
 
 

@@ -14,7 +14,11 @@ extern "C" {
 #include <libavutil/imgutils.h>
 };
 
-typedef void(*RenderCallback) (uint8_t *, int, int, int); // 函数指针声明定义
+/**
+ * 函数指针声明定义，传递的是一个函数
+ */
+typedef void(*RenderCallback) (uint8_t *, int, int, int);
+
 /**
  * 视频通道
  */
